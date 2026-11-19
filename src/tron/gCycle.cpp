@@ -24,7 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ***************************************************************************
 
 */
-
+#include "RL_config.h"
+#include "eSensor.h"
 #include "gCycle.h"
 #include "nConfig.h"
 #include "rModel.h"
@@ -93,6 +94,7 @@ static nNOInitialisator<gCycle> cycle_init(320,"cycle");
 //  *****************************************************************
 
 // static nVersionFeature sg_DoubleSpeed( 1 );
+static int count = 0;
 
 //tCONTROLLED_PTR(ePlayerNetID)   lastEnemyInfluence;  	// the last enemy wall we encountered
 //REAL							lastTime;				// the time it was drawn at
@@ -4737,6 +4739,82 @@ void gCycle::Render(const eCamera *cam){
         //glDisable(GL_TEXTURE);
         glDisable(GL_TEXTURE_2D);
         glColor3f(1,1,1);
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //            Sensor rendering       ~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        // Ray attributes
+        float raySize = RLConfig::RAY_SIZE;
+        int n_rays = RLConfig::N_RAYS;
+
+        float* sensorValues = new float[n_rays];
+
+        // Cast a ray for each of our rays.
+        for (int i=0; i< n_rays; i++) {
+            // Choose theta to range from [-angle/2,angle/2], and get that fan distribution effect
+            float ray_placement = ((static_cast<float>(i) +1.)/(static_cast<float>(n_rays)+1.)) - 0.5; 
+            float theta = ray_placement * RLConfig::FAN_ANGLE; // Amount to rotate the ray 
+
+            //--------------- Sensor collision----------------
+            // std::cout << "\nPlacement:" << theta << std::endl;
+
+            // 1. Rotate the ray. 
+            eCoord rayStart =  pos;
+            eCoord rayVec(
+                dir.x*std::cos(theta) - dir.y*std::sin(theta),
+                dir.x*std::sin(theta) + dir.y*std::cos(theta)
+            ); // rayVec=dir.rotate(theta) about y axis
+            
+
+            // 2. Create sensor
+            eSensor sensor(this, rayStart, rayVec);
+            sensor.detect(raySize);
+            // I have no idea why this works they have a weird raycast implementation that changes when its double the length, but this just looked visually correct.
+            float hit =  sensor.hit; 
+            // bool hitWall = hit< 0.5*raySize;
+            float t = std::min(2.0f * hit, raySize)/ raySize;
+
+            // 3. Draw the sensor
+
+            // BeginLines(); 
+            // glVertex3f(0.,0.,0.);
+            // glVertex3f(raySize, 0., 0.);
+            // RenderEnd();
+            eCoord drawVec( // We're in local space here not global so this is the workaround.
+                1.*std::cos(theta) - 0.*std::sin(theta),
+                1.*std::sin(theta) + 0.*std::cos(theta)
+            );
+
+            // Full beam
+            glColor3f(0.6,0.6,0.6); // grey
+            BeginLines();
+            glVertex3f(0., 0., 0.);
+            glVertex3f(drawVec.x * raySize, drawVec.y * raySize, 0.);
+            RenderEnd();
+
+            glColor3f(1., 1., 0.); // yellow
+            // % beam
+            BeginLines();
+            glVertex3f(0., 0., 0.);
+            glVertex3f(drawVec.x * raySize*t, drawVec.y * raySize*t, 0.);
+            RenderEnd();
+
+            sensorValues[i] = t;
+        }
+
+        std::cout << "SENSOR VALUES:" << std::endl;
+        for (int i=0; i<n_rays; i++) {
+            std::cout << sensorValues[i] << " ";
+        }  
+        std::cout << std::endl;
+
+
+        glColor3f(1,1,1);
+
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         {
             bool renderPyramid = false;

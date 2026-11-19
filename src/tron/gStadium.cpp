@@ -1633,11 +1633,15 @@ GLuint NewLists()
 #endif
 }
 
+
+
+rFileTexture catTexture(rTextureGroups::TEX_OBJ, "art/mreow.png", false, false, true); // Define the cat texture
+
 void Render( eGrid *, eCamera const * camera )
 {
     int const mode = sg_stadiumOverride >= 0 ? sg_stadiumOverride : sg_stadium;
     bool const lights = sg_stadiumOverride >= 0 || sg_stadiumGameLights;
-    if ( mode <= 0 || !sr_glOut || !camera )
+    if ( !sr_glOut || !camera ) // originally it was this:  if ( mode <= 0 || !sr_glOut || !camera )
         return;
 
     eRectangle const bounds = StadiumFloor();
@@ -1842,6 +1846,34 @@ void Render( eGrid *, eCamera const * camera )
     Normal();
     Untextured();
     glEnable( GL_CULL_FACE );
+
+    //--------------------------------------------------------------------
+    Color(1.0, 1.0, 1.0);
+    REAL startY = 50.0;
+    REAL s = 10.0;
+    REAL h = 50.0;
+
+
+    catTexture.Select();
+
+    BeginQuads();
+    TexCoord(0, 0);
+    Vertex(s, startY-s, 0);
+
+    TexCoord(1, 0);
+    Vertex(s, startY+s, 0);
+
+    TexCoord(1, 1);
+    Vertex(s, startY+s, h);
+
+    TexCoord(0, 1);
+    Vertex(s,startY-s, h);
+
+    RenderEnd();
+
+    //--------------------------------------------------------------------
+
+
     glColor4f( 1, 1, 1, 1 );
 }
 

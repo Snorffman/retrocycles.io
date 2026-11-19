@@ -926,7 +926,7 @@ int main(int argc,char **argv){
 
 #ifndef __EMSCRIPTEN__
                     // the browser build never enters the menus (gBrowserStart below)
-                    welcome();
+                    // welcome(); // Comment out welcome() screen so we just get straight into it
 #endif
 
                     //std::cout << "atexit\n";
@@ -947,7 +947,9 @@ int main(int argc,char **argv){
                     // connect() (or right away with a #ws:// fragment); never returns
                     gBrowserStart();
 #endif
-                    MainMenu();
+                    
+                    sg_SinglePlayerGame(); // MainMenu(); // Replace MainMenu with this to skip the main menu screen.
+
 
                     // remove all players
                     for ( int i = se_PlayerNetIDs.Len()-1; i>=0; --i )
